@@ -9,9 +9,10 @@ import {
   ActionIcon,
   Select,
   Button,
+  Input,
 } from "@mantine/core";
 
-import { getRunCodeResult } from "./services";
+import { getRunCodeResult, SaveCodeService } from "./services";
 
 import {
   IoSettingsOutline,
@@ -24,17 +25,20 @@ import {
 function timeout(delay) {
   return new Promise((res) => setTimeout(res, delay));
 }
-
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      code_name: "",
       lang: "python",
       CodeData: "",
       code_result: "",
       runStatus: {
         color: "blue",
         text: "state",
+      },
+      EditorOptions: {
+        fontSize: "14px",
       },
     };
   }
@@ -47,11 +51,30 @@ class App extends React.Component {
     console.log("onChange", newValue, e);
   }
 
-  ChangeFontSize(e) {
-    console.log(e);
-  }
-
   render() {
+
+    const ChangeFontSize = () => {
+      let result = parseInt(this.state.EditorOptions.fontSize) + 2;
+      if (result > 24) {
+        result = 14;
+      }
+      this.setState({ EditorOptions: { fontSize: result + 'px' } });
+    }
+
+    const SaveCode = async () => {
+      const params = {
+        language: this.state.lang,
+        code_data: this.state.CodeData,
+        name: this.state.code_name,
+      };
+      const resp = await SaveCodeService(params);
+      await timeout(500);
+
+      this.setState({ runStatus: { color: "teal", text: "done" } });
+
+      console.log(resp);
+    };
+
     const RunCode = async () => {
       this.setState({ runStatus: { text: "running" } });
 
@@ -68,13 +91,9 @@ class App extends React.Component {
     const LangOptions = [
       { value: "python", label: "Python" },
       { value: "javascript", label: "JavaScript" },
-      { value: "vue", label: "Vue" },
-      { value: "react", label: "React" },
+      { value: "golang", label: "Go" },
+      { value: "rust", label: "Rust" },
     ];
-
-    const options = {
-      fontSize: "15px",
-    };
 
     return (
       <div
@@ -114,10 +133,22 @@ class App extends React.Component {
                   borderBottom: "1px solid #ececec",
                 }}
               >
+                <Input
+                  value={this.state.code_name}
+                  onChange={(event) =>
+                    this.setState({ code_name: event.currentTarget.value })
+                  }
+                  size="xs"
+                  style={{
+                    width: "140px",
+                    margin: "7px 0 0 5px",
+                  }}
+                  placeholder="Name"
+                />
                 <ActionIcon
                   variant="transparent"
                   size={45}
-                  onClick={this.ChangeFontSize}
+                  onClick={ChangeFontSize}
                 >
                   <IoTextSharp />
                 </ActionIcon>
@@ -147,6 +178,16 @@ class App extends React.Component {
                     style={{
                       marginTop: "7px",
                     }}
+                    onClick={SaveCode}
+                  >
+                    Save
+                  </Button>
+                  &nbsp;&nbsp;
+                  <Button
+                    size="xs"
+                    style={{
+                      marginTop: "7px",
+                    }}
                     onClick={RunCode}
                     variant="outline"
                     color="blue"
@@ -156,7 +197,7 @@ class App extends React.Component {
                 </div>
               </div>
               <Editor
-                options={options}
+                options={this.state.EditorOptions}
                 height="calc(100% - 45px)"
                 theme="vs-dark"
                 language={this.state.lang}
@@ -177,7 +218,7 @@ class App extends React.Component {
               >
                 <p
                   style={{
-                    "white-space": "pre-wrap",
+                    whiteSpace: "pre-wrap",
                   }}
                 >
                   {this.state.code_result}
