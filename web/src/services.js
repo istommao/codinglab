@@ -11,3 +11,9 @@ export const SaveCodeService = async (data) => {
 
   return await axios.post(url, data);
 };
+
+export const GetCodeListService = async () => {
+  const url = "http://127.0.0.1:6543/api/code/list";
+
+  return await axios.get(url);
+};

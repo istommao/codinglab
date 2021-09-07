@@ -10,9 +10,14 @@ import {
   Select,
   Button,
   Input,
+  Card,
 } from "@mantine/core";
 
-import { getRunCodeResult, SaveCodeService } from "./services";
+import {
+  getRunCodeResult,
+  SaveCodeService,
+  GetCodeListService,
+} from "./services";
 
 import {
   IoSettingsOutline,
@@ -29,8 +34,10 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      CodeDataList: [],
       code_name: "",
       lang: "python",
+      CodeUUID: "",
       CodeData: "",
       code_result: "",
       runStatus: {
@@ -51,24 +58,41 @@ class App extends React.Component {
     console.log("onChange", newValue, e);
   }
 
+  async componentDidMount() {
+    const resp = await GetCodeListService();
+
+    this.setState({ CodeDataList: resp.data.result });
+  }
+
   render() {
+    const changeCodeFile = (uuid) => {
+      const item = this.state.CodeDataList.find((item) => item.uuid === uuid);
+      this.setState({
+        code_name: item.name,
+        CodeData: item.code_data,
+        lang: item.language,
+      });
+
+      this.setState({ CodeUUID: item.uuid });
+    };
 
     const ChangeFontSize = () => {
       let result = parseInt(this.state.EditorOptions.fontSize) + 2;
       if (result > 24) {
         result = 14;
       }
-      this.setState({ EditorOptions: { fontSize: result + 'px' } });
-    }
+      this.setState({ EditorOptions: { fontSize: result + "px" } });
+    };
 
     const SaveCode = async () => {
       const params = {
         language: this.state.lang,
         code_data: this.state.CodeData,
         name: this.state.code_name,
+        uuid: this.state.CodeUUID,
       };
       const resp = await SaveCodeService(params);
-      await timeout(500);
+      await timeout(200);
 
       this.setState({ runStatus: { color: "teal", text: "done" } });
 
@@ -83,7 +107,7 @@ class App extends React.Component {
         code_data: this.state.CodeData,
       };
       const resp = await getRunCodeResult(params);
-      await timeout(500);
+      await timeout(200);
 
       this.setState({ runStatus: { color: "teal", text: "done" } });
       this.setState({ code_result: resp.data });
@@ -117,7 +141,22 @@ class App extends React.Component {
               borderBottom: "1px solid #ececec",
             }}
           >
-            <div style={{ width: "150px" }}>Menu</div>
+            <div style={{ width: "150px" }}>
+              {this.state.CodeDataList.map((item) => (
+                <Card key={item.uuid} shadow="sm" padding="lg">
+                  {item.name}
+                  <Button
+                    onClick={() => changeCodeFile(item.uuid)}
+                    variant="light"
+                    color="blue"
+                    fullWidth
+                    style={{ marginTop: 14 }}
+                  >
+                    Load
+                  </Button>
+                </Card>
+              ))}
+            </div>
             <div
               style={{
                 width: "calc(100% - 560px)",
